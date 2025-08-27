@@ -14,6 +14,7 @@
   "type": "commonjs",
   "dependencies": {
     "dotenv": "^17.2.1",
+    "express": "^5.1.0",
     "grammy": "^1.38.1"
   },
   "devDependencies": {
