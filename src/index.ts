@@ -1,38 +1,77 @@
+import { hydrate } from "@grammyjs/hydrate";
 import "dotenv/config";
-import { Bot, GrammyError, HttpError } from "grammy";
+import { Bot, GrammyError, HttpError, InlineKeyboard } from "grammy";
 import mongoose from "mongoose";
+import { start } from "./commands/index.js";
 import { User } from "./models/User.js";
+import { MyContext } from "./types.js";
 
-const bot = new Bot(process.env.BOT_API_KEY!);
+const bot = new Bot<MyContext>(process.env.BOT_API_KEY!);
+
+bot.use(hydrate());
 
 // Ответ на команду /start
-bot.command("start", async (ctx) => {
-  if (!ctx.from) {
-    return ctx.reply("User info is not available");
-  }
+bot.command("start", start);
 
-  const { id, username, first_name } = ctx.from;
+bot.callbackQuery("menu", (ctx) => {
+  ctx.answerCallbackQuery();
 
-  try {
-    const existingUser = await User.findOne({ telegramId: id });
-
-    if (existingUser) {
-      return ctx.reply(`Welcome back, ${first_name}`);
+  ctx.callbackQuery.message?.editText(
+    "Asosiy menyuga xush kelibsiz.\nMahsulotlar bilan tanishib chiqishingiz yoki Profilingiz bilan tanishib chiqishingiz mumkin.",
+    {
+      reply_markup: new InlineKeyboard()
+        .text("Products", "products")
+        .text("Profile", "profile"),
     }
+  );
+});
 
-    const newUser = new User({
-      telegramId: id,
-      firstName: first_name,
-      username,
-    });
+bot.callbackQuery("products", (ctx) => {
+  ctx.answerCallbackQuery();
 
-    await newUser.save();
+  ctx.callbackQuery.message?.editText("Mahsulotlar", {
+    reply_markup: new InlineKeyboard().text("Back", "backToMenu"),
+  });
+});
 
-    return ctx.reply(`You are registered, ${first_name}`);
-  } catch (error) {
-    console.error("Error in start command:", error);
-    ctx.reply("An error occurred while processing your request.");
+bot.callbackQuery("profile", async (ctx) => {
+  ctx.answerCallbackQuery();
+
+  const user = await User.findOne({
+    telegramId: ctx.from.id,
+  });
+
+  if (!user) {
+    return ctx.callbackQuery.message?.editText(
+      "Shaxsiy kabinetingiz mavjud emas.\nIltimos /start orqali ro'yxatdan o'ting."
+    );
   }
+
+  const registrationDate = user.createdAt.toLocaleDateString("uz-Uz", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+
+  ctx.callbackQuery.message?.editText(
+    `Assalomu Aleykum: ${ctx.from.first_name}\nDate: ${registrationDate}\nSizda buyurtmalar mavjud emas.`,
+    {
+      reply_markup: new InlineKeyboard().text("Back", "backToMenu"),
+    }
+  );
+});
+
+bot.callbackQuery("backToMenu", (ctx) => {
+  ctx.answerCallbackQuery();
+
+  ctx.callbackQuery.message?.editText(
+    "Asosiy menyuga xush kelibsiz.\nMahsulotlar bilan tanishib chiqishingiz yoki Profilingiz bilan tanishib chiqishingiz mumkin.",
+    {
+      reply_markup: new InlineKeyboard()
+        .text("Products", "products")
+        .text("Profile", "profile"),
+    }
+  );
 });
 
 // Ответ на любое сообщение
