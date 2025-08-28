@@ -2,8 +2,7 @@ import { hydrate } from "@grammyjs/hydrate";
 import "dotenv/config";
 import { Bot, GrammyError, HttpError, InlineKeyboard } from "grammy";
 import mongoose from "mongoose";
-import { start } from "./commands/index.js";
-import { User } from "./models/User.js";
+import { productsCommand, profile, start } from "./commands/index.js";
 import { MyContext } from "./types.js";
 
 const bot = new Bot<MyContext>(process.env.BOT_API_KEY!);
@@ -26,40 +25,9 @@ bot.callbackQuery("menu", (ctx) => {
   );
 });
 
-bot.callbackQuery("products", (ctx) => {
-  ctx.answerCallbackQuery();
+bot.callbackQuery("products", productsCommand);
 
-  ctx.callbackQuery.message?.editText("Mahsulotlar", {
-    reply_markup: new InlineKeyboard().text("Back", "backToMenu"),
-  });
-});
-
-bot.callbackQuery("profile", async (ctx) => {
-  ctx.answerCallbackQuery();
-
-  const user = await User.findOne({
-    telegramId: ctx.from.id,
-  });
-
-  if (!user) {
-    return ctx.callbackQuery.message?.editText(
-      "Shaxsiy kabinetingiz mavjud emas.\nIltimos /start orqali ro'yxatdan o'ting."
-    );
-  }
-
-  const registrationDate = user.createdAt.toLocaleDateString("uz-Uz", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  });
-
-  ctx.callbackQuery.message?.editText(
-    `Assalomu Aleykum: ${ctx.from.first_name}\nDate: ${registrationDate}\nSizda buyurtmalar mavjud emas.`,
-    {
-      reply_markup: new InlineKeyboard().text("Back", "backToMenu"),
-    }
-  );
-});
+bot.callbackQuery("profile", profile);
 
 bot.callbackQuery("backToMenu", (ctx) => {
   ctx.answerCallbackQuery();
