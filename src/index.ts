@@ -2,7 +2,7 @@ import { hydrate } from "@grammyjs/hydrate";
 import "dotenv/config";
 import { Bot, GrammyError, HttpError, InlineKeyboard } from "grammy";
 import mongoose from "mongoose";
-import { productsCommand, profile, start } from "./commands/index.js";
+import { payments, productsCommand, profile, start } from "./commands/index.js";
 import { MyContext } from "./types.js";
 
 const bot = new Bot<MyContext>(process.env.BOT_API_KEY!);
@@ -28,6 +28,8 @@ bot.callbackQuery("menu", (ctx) => {
 bot.callbackQuery("products", productsCommand);
 
 bot.callbackQuery("profile", profile);
+
+bot.callbackQuery(/^buyProduct-\d+$/, payments);
 
 bot.callbackQuery("backToMenu", (ctx) => {
   ctx.answerCallbackQuery();
